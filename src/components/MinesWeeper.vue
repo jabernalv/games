@@ -22,10 +22,21 @@
           {{ String(timeElapsed).padStart(3, '0') }}
         </div>
       </div>
-      <div class="mb-4 flex justify-center space-x-2">
-        <button @click="startGame('easy')" class="difficulty-button">Principiante (8x8)</button>
-        <button @click="startGame('medium')" class="difficulty-button">Intermedio (16x16)</button>
-        <button @click="startGame('hard')" class="difficulty-button">Experto (30x16)</button>
+      <div class="mb-2 flex justify-center space-x-2">
+        <button
+          v-for="key in Object.keys(difficulties)"
+          :key="key"
+          @click="startGame(key)"
+          class="difficulty-button"
+        >
+          {{ difficultyLabels[key] }}
+        </button>
+      </div>
+      <div class="mb-2 flex justify-center space-x-2">
+        <span v-if="bestRevealed[currentDifficulty] !== undefined" class="text-xs text-gray-700"
+          >Récord: {{ bestRevealed[currentDifficulty] }} cuadros</span
+        >
+        <span v-else class="text-xs text-gray-700">Sin récord</span>
       </div>
       <div class="board-wrapper overflow-x-auto">
         <div class="minesweeper-grid" :style="gridStyle">
@@ -73,9 +84,17 @@ interface Difficulty {
 }
 
 const difficulties: Record<string, Difficulty> = {
-  easy: { rows: 8, cols: 8, mines: 10 },
-  medium: { rows: 16, cols: 16, mines: 40 },
-  hard: { rows: 16, cols: 30, mines: 99 },
+  '8x8': { rows: 8, cols: 8, mines: 10 },
+  '16x16': { rows: 16, cols: 16, mines: 40 },
+  '24x24': { rows: 24, cols: 24, mines: 99 },
+  '24x32': { rows: 32, cols: 24, mines: 150 },
+}
+
+const difficultyLabels: Record<string, string> = {
+  '8x8': '8x8',
+  '16x16': '16x16',
+  '24x24': '24x24',
+  '24x32': '24x32',
 }
 
 const board = ref<Cell[]>([])
@@ -86,10 +105,11 @@ const minesRemaining = ref(10)
 const gameOver = ref(false)
 const gameWon = ref(false)
 const timeElapsed = ref(0)
-const currentDifficulty = ref('easy')
+const currentDifficulty = ref('8x8')
 const firstClick = ref(true)
 const timerInterval = ref<NodeJS.Timeout | null>(null)
 const windowHeight = ref(window.innerHeight)
+const bestRevealed = ref<Record<string, number>>({})
 
 const gridStyle = computed(() => ({
   display: 'grid',
@@ -112,8 +132,24 @@ const handleResize = () => {
   windowHeight.value = window.innerHeight
 }
 
+const loadBestRevealed = () => {
+  const stored = localStorage.getItem('minesweeper_best_revealed')
+  if (stored) {
+    try {
+      bestRevealed.value = JSON.parse(stored)
+    } catch {
+      bestRevealed.value = {}
+    }
+  }
+}
+
+const saveBestRevealed = () => {
+  localStorage.setItem('minesweeper_best_revealed', JSON.stringify(bestRevealed.value))
+}
+
 onMounted(() => {
-  startGame('easy')
+  loadBestRevealed()
+  startGame('8x8')
   window.addEventListener('resize', handleResize)
 })
 
@@ -195,6 +231,19 @@ const calculateMinesAround = () => {
   }
 }
 
+const updateLiveBestRevealed = () => {
+  const diff = currentDifficulty.value
+  const revealedCount = board.value.filter((cell) => cell.revealed && !cell.isMine).length
+  if (
+    !gameOver.value &&
+    !firstClick.value &&
+    (bestRevealed.value[diff] === undefined || revealedCount > bestRevealed.value[diff])
+  ) {
+    bestRevealed.value[diff] = revealedCount
+    saveBestRevealed()
+  }
+}
+
 const revealCell = (index: number) => {
   if (gameOver.value || board.value[index].revealed || board.value[index].flagged) return
   if (firstClick.value) {
@@ -215,6 +264,7 @@ const revealCell = (index: number) => {
       setTimeout(() => revealCell(neighborIndex), 10)
     })
   }
+  updateLiveBestRevealed()
   checkWinCondition()
 }
 
@@ -248,7 +298,9 @@ const checkWinCondition = () => {
 const startTimer = () => {
   if (timerInterval.value) clearInterval(timerInterval.value)
   timerInterval.value = setInterval(() => {
-    if (!gameOver.value) timeElapsed.value++
+    if (!gameOver.value) {
+      timeElapsed.value++
+    }
   }, 1000)
 }
 

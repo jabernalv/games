@@ -3,9 +3,10 @@
     class="min-h-screen min-w-screen fixed inset-0 z-0 bg-gradient-to-br from-[#222] via-[#444] to-[#222] flex items-center justify-center"
   >
     <div class="spaceinvaders-container relative z-10">
-      <canvas ref="gameCanvas" width="480" height="320"></canvas>
+      <canvas ref="gameCanvas" width="600" height="400"></canvas>
       <div class="info-panel">
         <span>Puntaje: {{ score }}</span>
+        <span>Récord: {{ bestScore }}</span>
         <span>Vidas: {{ lives }}</span>
       </div>
       <div class="controls">
@@ -43,22 +44,22 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, nextTick } from 'vue'
 
-const canvasWidth = 480
-const canvasHeight = 320
+const canvasWidth = 600
+const canvasHeight = 400
 const playerWidth = 30
 const playerHeight = 20
 const playerY = canvasHeight - playerHeight - 10
 const playerSpeed = 5
 const bulletRadius = 5
 const bulletSpeed = 10
-const alienRows = 3
-const alienCols = 6
-const alienWidth = 20
-const alienHeight = 15
-const alienPadding = 10
-const alienOffsetTop = 30
-const alienOffsetLeft = 30
-const alienSpeedY = 10
+const alienRows = 4
+const alienCols = 8
+const alienWidth = 24
+const alienHeight = 18
+const alienPadding = 14
+const alienOffsetTop = 40
+const alienOffsetLeft = 40
+const alienSpeedY = 14
 
 const gameCanvas = ref<HTMLCanvasElement | null>(null)
 const score = ref(0)
@@ -69,14 +70,17 @@ let playerX = canvasWidth / 2 - playerWidth / 2
 let movingLeft = false
 let movingRight = false
 let playerBullets: { x: number; y: number }[] = []
-let aliens: { x: number; y: number; visible: boolean }[][] = []
-let alienSpeedX = 1
+let aliens: { x: number; y: number; visible: boolean; type: number }[][] = []
+let alienSpeedX = 0.7
 let alienDirection = 1
+let alienAnimTimer: number | null = null
+let alienFrameIdx = 0
+let alienFireCounter = 0
 let animationId: number | null = null
 
-// Animación de marcianos (dos frames)
-const alienFrames = [
-  // Frame 1: abierto
+// 1. NUEVAS FORMAS Y COLORES PARA ALIENS
+const alienShapes = [
+  // Forma 1
   [
     [0, 1, 0],
     [1, 1, 1],
@@ -84,23 +88,59 @@ const alienFrames = [
     [1, 0, 1],
     [0, 1, 0],
   ],
-  // Frame 2: cerrado
+  // Forma 2
+  [
+    [1, 0, 1],
+    [1, 1, 1],
+    [0, 1, 0],
+    [1, 1, 1],
+    [1, 0, 1],
+  ],
+  // Forma 3
+  [
+    [1, 1, 1],
+    [1, 0, 1],
+    [1, 1, 1],
+    [0, 1, 0],
+    [1, 1, 1],
+  ],
+  // Forma 4
   [
     [0, 1, 0],
-    [1, 1, 1],
-    [1, 1, 1],
-    [0, 1, 0],
     [1, 0, 1],
+    [1, 1, 1],
+    [1, 0, 1],
+    [0, 1, 0],
   ],
 ]
-let alienFrameIdx = 0
-let alienAnimTimer: number | null = null
+const alienColors = ['#00eaff', '#ff00c8', '#ffe600', '#00ff5e']
+
+// 3. RECORD
+const bestScore = ref(0)
+const loadBestScore = () => {
+  const stored = localStorage.getItem('spaceinvaders_best_score')
+  if (stored) {
+    try {
+      bestScore.value = parseInt(stored)
+    } catch {
+      bestScore.value = 0
+    }
+  }
+}
+const saveBestScore = () => {
+  localStorage.setItem('spaceinvaders_best_score', String(bestScore.value))
+}
+function updateBestScore() {
+  if (score.value > bestScore.value) {
+    bestScore.value = score.value
+    saveBestScore()
+  }
+}
 
 // Disparos enemigos
 let alienBullets: { x: number; y: number }[] = []
-const alienBulletSpeed = 4
-const alienFireInterval = 60 // frames
-let alienFireCounter = 0
+let alienFireInterval = 90 // disparan menos seguido
+const alienBulletSpeed = 3 // balas enemigas más lentas
 
 function createAliens() {
   aliens = []
@@ -109,17 +149,17 @@ function createAliens() {
     for (let r = 0; r < alienRows; r++) {
       const alienX = c * (alienWidth + alienPadding) + alienOffsetLeft
       const alienY = r * (alienHeight + alienPadding) + alienOffsetTop
-      aliens[c][r] = { x: alienX, y: alienY, visible: true }
+      aliens[c][r] = { x: alienX, y: alienY, visible: true, type: r % alienShapes.length }
     }
   }
 }
 
-function drawAlien(ctx: CanvasRenderingContext2D, x: number, y: number) {
-  const frame = alienFrames[alienFrameIdx]
+function drawAlien(ctx: CanvasRenderingContext2D, x: number, y: number, type: number) {
+  const frame = alienShapes[type]
   for (let row = 0; row < frame.length; row++) {
     for (let col = 0; col < frame[row].length; col++) {
       if (frame[row][col]) {
-        ctx.fillStyle = 'red'
+        ctx.fillStyle = alienColors[type]
         ctx.fillRect(x + col * 3, y + row * 3, 3, 3)
       }
     }
@@ -156,7 +196,7 @@ function draw() {
   for (let c = 0; c < alienCols; c++) {
     for (let r = 0; r < alienRows; r++) {
       if (aliens[c][r].visible) {
-        drawAlien(ctx, aliens[c][r].x, aliens[c][r].y)
+        drawAlien(ctx, aliens[c][r].x, aliens[c][r].y, aliens[c][r].type)
       }
     }
   }
@@ -250,6 +290,7 @@ function checkCollisions() {
           playerBullets.splice(i, 1)
           i--
           score.value += 10
+          updateBestScore()
           return
         }
       }
@@ -379,7 +420,7 @@ function startGame() {
   playerX = canvasWidth / 2 - playerWidth / 2
   playerBullets = []
   alienBullets = []
-  alienSpeedX = 1
+  alienSpeedX = 0.7
   alienDirection = 1
   alienFrameIdx = 0
   alienFireCounter = 0
@@ -403,6 +444,7 @@ function restart() {
 
 onMounted(() => {
   nextTick(() => {
+    loadBestScore()
     startGame()
     window.addEventListener('keydown', handleKey)
     window.addEventListener('keyup', handleKeyUp)

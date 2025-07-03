@@ -7,6 +7,7 @@
         <h1>Tetris</h1>
         <div class="game-info">
           <span>Puntaje: {{ score }}</span>
+          <span>Récord: {{ bestScore }}</span>
           <span>Nivel: {{ level }}</span>
           <span>Líneas: {{ lines }}</span>
         </div>
@@ -72,6 +73,7 @@ const currentPiece = ref<any>(null)
 const nextPiece = ref<any>(null)
 const dropInterval = ref(1000)
 let dropTimer: number | null = null
+const bestScore = ref(0)
 
 const gameBoard = ref<HTMLCanvasElement | null>(null)
 const nextPieceCanvas = ref<HTMLCanvasElement | null>(null)
@@ -249,8 +251,9 @@ function clearLines() {
     lines.value += linesCleared
     if (lines.value >= level.value * 10) {
       level.value++
-      dropInterval.value = Math.max(100, 1000 - (level.value - 1) * 100)
+      dropInterval.value = Math.max(100, 1000 - (level.value - 1) * 50)
     }
+    updateBestScore()
   }
 }
 
@@ -334,6 +337,7 @@ function startGame() {
   drawNextPiece()
   if (dropTimer) clearTimeout(dropTimer)
   dropTimer = window.setTimeout(gameLoop, dropInterval.value)
+  updateBestScore()
 }
 
 function stopGame() {
@@ -354,8 +358,31 @@ function handleKey(e: KeyboardEvent) {
   else if (e.key.toLowerCase() === 'p') paused.value = !paused.value
 }
 
+const loadBestScore = () => {
+  const stored = localStorage.getItem('tetris_best_score')
+  if (stored) {
+    try {
+      bestScore.value = parseInt(stored)
+    } catch {
+      bestScore.value = 0
+    }
+  }
+}
+
+const saveBestScore = () => {
+  localStorage.setItem('tetris_best_score', String(bestScore.value))
+}
+
+function updateBestScore() {
+  if (score.value > bestScore.value) {
+    bestScore.value = score.value
+    saveBestScore()
+  }
+}
+
 onMounted(() => {
   nextTick(() => {
+    loadBestScore()
     startGame()
     window.addEventListener('keydown', handleKey)
     drawBoard()
