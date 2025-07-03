@@ -15,4 +15,4 @@ pnpm run deploy
 
 echo ""
 echo "✅ ¡Deploy exitoso!"
-echo "🌐 Tu sitio está en: https://jabernalv.github.io/herramientas/"
+echo "🌐 Tu sitio está en: https://jabernalv.github.io/games/"
