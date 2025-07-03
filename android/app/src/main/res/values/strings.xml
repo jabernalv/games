@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">games-jb</string>
+    <string name="title_activity_main">games-jb</string>
+    <string name="package_name">com.games.jb</string>
+    <string name="custom_url_scheme">com.games.jb</string>
+</resources>
