@@ -1,1 +1,0 @@
-import{_ as o}from"./index-U1VtMyGM.js";import{c as t,e as s,d as r}from"./vue-vendor-DpVgmi3Y.js";import"./primevue-B_xtssf4.js";const a={},n={class:"about"};function c(i,e){return r(),t("div",n,e[0]||(e[0]=[s("h1",null,"This is an about page",-1)]))}const l=o(a,[["render",c]]);export{l as default};
