@@ -29,7 +29,7 @@
           @click="startGame(key)"
           class="difficulty-button"
         >
-          {{ difficultyLabels[key] }}
+          {{ difficulties[key].label }}
         </button>
       </div>
       <div class="mb-2 flex justify-center space-x-2">
@@ -80,21 +80,14 @@ interface Cell {
 interface Difficulty {
   rows: number
   cols: number
-  mines: number
+  label: string
 }
 
 const difficulties: Record<string, Difficulty> = {
-  '8x8': { rows: 8, cols: 8, mines: 10 },
-  '16x16': { rows: 16, cols: 16, mines: 40 },
-  '24x24': { rows: 24, cols: 24, mines: 99 },
-  '24x32': { rows: 32, cols: 24, mines: 150 },
-}
-
-const difficultyLabels: Record<string, string> = {
-  '8x8': '8x8',
-  '16x16': '16x16',
-  '24x24': '24x24',
-  '24x32': '24x32',
+  '8x8': { rows: 8, cols: 8, label: '8x8' },
+  '16x16': { rows: 16, cols: 16, label: '16x16' },
+  '24x24': { rows: 16, cols: 24, label: '16x24' },
+  '24x32': { rows: 16, cols: 32, label: '16x32' },
 }
 
 const board = ref<Cell[]>([])
@@ -163,12 +156,12 @@ const startGame = (difficulty: string) => {
   const config = difficulties[difficulty]
   rows.value = config.rows
   cols.value = config.cols
-  mines.value = config.mines
+  mines.value = Math.round(config.rows * config.cols * 0.17)
   gameOver.value = false
   gameWon.value = false
   timeElapsed.value = 0
   firstClick.value = true
-  minesRemaining.value = config.mines
+  minesRemaining.value = mines.value
   if (timerInterval.value) clearInterval(timerInterval.value)
   initializeBoard()
 }
