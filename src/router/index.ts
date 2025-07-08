@@ -1,6 +1,9 @@
+// ./src/router/index.ts
+// ⚠️ ADVERTENCIA: NO CAMBIAR createWebHashHistory por createWebHistory
+// Rompe la navegación en producción y desarrollo. Consulta con el responsable antes de modificar esto.
 import {
   createRouter,
-  createWebHashHistory, // No cambiar a createWebHistory poque se rompe la  navegación
+  createWebHashHistory, // ⚠️ NO CAMBIAR a createWebHistory: ROMPE la navegación. ¡Consulta antes de tocar esto!
   type RouteRecordRaw,
 } from 'vue-router'
 
