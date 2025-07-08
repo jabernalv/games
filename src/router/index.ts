@@ -13,11 +13,11 @@ const routes: RouteRecordRaw[] = [
     name: 'home',
     component: () => import('@/components/Index.vue'),
   },
-  {
-    path: '/about',
-    name: 'about',
-    component: () => import('@/views/AboutView.vue'),
-  },
+  // { // Eliminada la ruta /about porque el archivo AboutView.vue no existe
+  //   path: '/about',
+  //   name: 'about',
+  //   component: () => import('@/views/AboutView.vue'),
+  // },
   {
     path: '/buscaminas',
     name: 'buscaminas',

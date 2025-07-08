@@ -43,7 +43,7 @@ const categories = computed(() => {
     <div class="container mx-auto px-4 sm:px-6 lg:px-8">
       <header class="text-center mb-8">
         <h1 class="text-4xl font-extrabold text-primary-700 mb-2 flex items-center justify-center">
-          🛠️ Caja de herramientas Web
+          Juegos web
         </h1>
         <p class="text-xl text-surface-600">Juegos web</p>
       </header>
