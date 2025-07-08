@@ -96,8 +96,9 @@ interface Difficulty {
 const difficulties: Record<string, Difficulty> = {
   '8x8': { rows: 8, cols: 8, label: '8x8' },
   '16x16': { rows: 16, cols: 16, label: '16x16' },
-  '24x24': { rows: 16, cols: 24, label: '16x24' },
-  '24x32': { rows: 16, cols: 32, label: '16x32' },
+  '16x24': { rows: 16, cols: 24, label: '16x24' },
+  '16x32': { rows: 16, cols: 32, label: '16x32' },
+  '16x40': { rows: 16, cols: 40, label: '16x40' },
 }
 
 const board = ref<Cell[]>([])
