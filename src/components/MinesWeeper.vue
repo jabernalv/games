@@ -33,10 +33,20 @@
         </button>
       </div>
       <div class="mb-2 flex justify-center space-x-2">
-        <span v-if="bestRevealed[currentDifficulty] !== undefined" class="text-xs text-gray-700"
-          >Récord: {{ bestRevealed[currentDifficulty] }} cuadros</span
+        <span
+          v-if="bestRevealed[getStorageKey(rows, cols)] !== undefined"
+          class="text-xs text-gray-700"
+          >Récord: {{ bestRevealed[getStorageKey(rows, cols)] }} cuadros</span
         >
         <span v-else class="text-xs text-gray-700">Sin récord</span>
+      </div>
+      <div class="mb-2 flex justify-center space-x-2">
+        <span
+          v-if="bestTimes[getStorageKey(rows, cols)] !== undefined"
+          class="text-xs text-gray-700"
+          >Mejor tiempo: {{ bestTimes[getStorageKey(rows, cols)] }}s</span
+        >
+        <span v-else class="text-xs text-gray-700">Sin tiempo récord</span>
       </div>
       <div class="board-wrapper overflow-x-auto">
         <div class="minesweeper-grid" :style="gridStyle">
@@ -61,7 +71,7 @@
       </div>
       <div v-if="gameOver" class="mt-4 text-center">
         <p v-if="gameWon" class="text-2xl font-bold text-green-600">¡Ganaste!</p>
-        <p v-else class="text-2xl font-bold text-red-600">¡Game Over!</p>
+        <p v-else class="text-2xl font-bold text-red-600">¡Terminado sin ganar!</p>
       </div>
     </div>
   </div>
@@ -103,6 +113,7 @@ const firstClick = ref(true)
 const timerInterval = ref<NodeJS.Timeout | null>(null)
 const windowHeight = ref(window.innerHeight)
 const bestRevealed = ref<Record<string, number>>({})
+const bestTimes = ref<Record<string, number>>({})
 
 const gridStyle = computed(() => ({
   display: 'grid',
@@ -140,8 +151,28 @@ const saveBestRevealed = () => {
   localStorage.setItem('minesweeper_best_revealed', JSON.stringify(bestRevealed.value))
 }
 
+const loadBestTimes = () => {
+  const stored = localStorage.getItem('minesweeper_best_times')
+  if (stored) {
+    try {
+      bestTimes.value = JSON.parse(stored)
+    } catch {
+      bestTimes.value = {}
+    }
+  }
+}
+
+const saveBestTimes = () => {
+  localStorage.setItem('minesweeper_best_times', JSON.stringify(bestTimes.value))
+}
+
+const getStorageKey = (rows: number, cols: number) => {
+  return `${rows}x${cols}`
+}
+
 onMounted(() => {
   loadBestRevealed()
+  loadBestTimes()
   startGame('8x8')
   window.addEventListener('resize', handleResize)
 })
@@ -156,7 +187,7 @@ const startGame = (difficulty: string) => {
   const config = difficulties[difficulty]
   rows.value = config.rows
   cols.value = config.cols
-  mines.value = Math.round(config.rows * config.cols * 0.17)
+  mines.value = Math.round(config.rows * config.cols * 0.2)
   gameOver.value = false
   gameWon.value = false
   timeElapsed.value = 0
@@ -225,15 +256,28 @@ const calculateMinesAround = () => {
 }
 
 const updateLiveBestRevealed = () => {
-  const diff = currentDifficulty.value
+  const storageKey = getStorageKey(rows.value, cols.value)
   const revealedCount = board.value.filter((cell) => cell.revealed && !cell.isMine).length
   if (
     !gameOver.value &&
     !firstClick.value &&
-    (bestRevealed.value[diff] === undefined || revealedCount > bestRevealed.value[diff])
+    (bestRevealed.value[storageKey] === undefined || revealedCount > bestRevealed.value[storageKey])
   ) {
-    bestRevealed.value[diff] = revealedCount
+    bestRevealed.value[storageKey] = revealedCount
     saveBestRevealed()
+  }
+}
+
+const updateBestTime = () => {
+  if (gameWon.value) {
+    const storageKey = getStorageKey(rows.value, cols.value)
+    if (
+      bestTimes.value[storageKey] === undefined ||
+      timeElapsed.value < bestTimes.value[storageKey]
+    ) {
+      bestTimes.value[storageKey] = timeElapsed.value
+      saveBestTimes()
+    }
   }
 }
 
@@ -285,6 +329,7 @@ const checkWinCondition = () => {
     board.value.forEach((cell) => {
       if (cell.isMine && !cell.flagged) cell.flagged = true
     })
+    updateBestTime()
   }
 }
 
